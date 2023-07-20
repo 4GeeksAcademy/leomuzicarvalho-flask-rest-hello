@@ -1,7 +1,6 @@
 """
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
-import hashlib
 import os
 from flask import Flask, request, jsonify, url_for
 from flask_migrate import Migrate
@@ -10,7 +9,6 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from utils import APIException, generate_sitemap, get_hash
 from admin import setup_admin
-from sqlalchemy.orm import sessionmaker
 from models import db, User
 #from models import Person
 
@@ -44,15 +42,15 @@ def handle_create_user():
     password = request.json.get("password", None)
 
     if not email or not password:
-        return jsonify({ "msg": "No password or email present." }), 201
+        return jsonify({ "msg": "No password or email present." }), 400
     
     new_user = User(password=get_hash(password), email=email)
+    db.session.add(new_user)
+    db.session.commit()
+
     response_body = {
         "msg": "User created"
     }
-
-    db.session.add(new_user)
-    db.session.commit()
     return jsonify(response_body), 201
 
 @app.route("/token", methods=["POST"])
